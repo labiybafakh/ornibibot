@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "ros/ros.h"
 #include "std_msgs/Float64MultiArray.h"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/TransformStamped.h>
-
+#include <nav_msgs/Odometry.h>
+#include <ros/console.h>
 
 #define ts 0.005
 #define h 4
@@ -17,11 +20,14 @@ float intX,intY, intZ;
 float position[3];
 int iteration=0;
 double ax, ay, az;
-double roll,pitch,yaw;
-float vx,vy,vz,sx,sy,sz;
-double current_time,last_time;
+double roll,pitch,yaw; 
+double dt;
+double currentSx,lastSx,futureSx;
+double currentSy,lastSy,futureSy;
+double currentSz,lastSz,futureSz;
+double posX,posY;
 
-void getPosition(int ax, int ay, int az);
+void getPosition(double ax, double ay, double az, double yaw);
 
 void accCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
@@ -32,11 +38,11 @@ void accCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
   pitch = msg->data[4];
   yaw   = msg->data[5];
 
-//   if(yaw >= 0 && yaw <=180)
-//     yaw = yaw / 57.2958;
-//   else
-//     yaw = ((360-yaw) * -1) / 57.2958;
-  yaw = yaw / 57.2958;
+  if(yaw >= 0 && yaw <=180)
+    yaw = yaw / 57.2958;
+  else
+    yaw = ((360-yaw) * -1) / 57.2958;
+//   yaw = yaw / 57.2958;
    
 
 }
@@ -73,22 +79,28 @@ void simpsonRule(int ax, int ay, int az){
     }
 }
 
-void getPosition(int ax, int ay, int az){
+void getPosition(double ax, double ay, double az, double yaw){
     //Function of simpson rule integration
+    currentSx   = futureSx;
+    currentSy   = futureSy;
+    currentSz   = futureSz;
 
-    vx      = vx + ((lastAx + ax) * 0.5) 
-   
-    intX    = calcDisplacement(ax);
-    intY    = calcDisplacement(ay);
-    intZ    = calcDisplacement(az);
+    posX        = (currentSx * cos(yaw)) - (currentSy * sin(yaw));
+    posY        = (currentSx * sin(yaw)) + (currentSy * cos(yaw));
 
-    //Calculate final distance from integration        
-    position[0] += intX;     
-    position[1] += intY;
-    position[2] += intZ;
+    futureSx    = currentSx + (currentSx-lastSx) + (ax * dt *dt);
+    lastSx      = currentSx;
+    futureSy    = currentSy + (currentSy-lastSy) + (ay * dt *dt);
+    lastSy      = currentSy;
+    futureSz    = currentSz + (currentSz-lastSz) + (az * dt *dt);
+    lastSz      = currentSz;
 
-
-
+    futureSx    = currentSx + (currentSx-lastSx) + (ax * dt *dt);
+    lastSx      = currentSx;
+    futureSy    = currentSy + (currentSy-lastSy) + (ay * dt *dt);
+    lastSy      = currentSy;
+    futureSz    = currentSz + futureSz + (az * dt *dt);
+    lastSz      = currentSz;
 }
 
 int main(int argc, char **argv){
@@ -99,45 +111,73 @@ int main(int argc, char **argv){
     // tf::TransfromBroadcaster odom_broadcaster;
 
     Subscriber sub = n.subscribe("Nav", 1, accCallback);
-    // Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom",50);
-    
+    Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom",50);
+    Time current_time,last_time;
     // current_time = Time::now();
     // last_time = Time::now();
 
     Rate loop_rate(200);
 
     while(ok){
-        
-        current_time = Time::now().toSec();
-        
-        getPosition(ax, ay, az);        
-        
-        // printf("\n\r%f\t%f\t%f\t%f\t%f\t%f\t%f",position[0],position[1],position[2], ax, ay, az, yaw);
-        printf("\n\r%f\t%f",current_time, last_time);
 
+        spinOnce();       
+
+        current_time= Time::now();
+        dt          = (current_time - last_time).toSec();
+
+        getPosition(ax, ay, az, yaw); 
+        // printf("\n\r%f\t%f\t%f\t%f\t%f\t%f\t%f",position[0],position[1],position[2], ax, ay, az, yaw);
+        // printf("\n\r%f\t%f",current_time, last_time);
         last_time = current_time;
 
         static tf2_ros::TransformBroadcaster br;
         geometry_msgs::TransformStamped transformStamped;
         
-        transformStamped.header.stamp = Time::now();
+        transformStamped.header.stamp = current_time;
         transformStamped.header.frame_id = "map";
         transformStamped.child_frame_id = "base_link";
-        transformStamped.transform.translation.x = position[0];
-        transformStamped.transform.translation.y = position[1];
-        transformStamped.transform.translation.z = position[2];
+        transformStamped.transform.translation.x = posX;
+        transformStamped.transform.translation.y = posY;
+        transformStamped.transform.translation.z = currentSz;
 
-        tf2::Quaternion q;
-        q.setRPY(0, 0, yaw);
+        tf2::Quaternion quat_tf;
+        quat_tf.setRPY(0, 0, yaw);
 
-        transformStamped.transform.rotation.x = q.x();
-        transformStamped.transform.rotation.y = q.y();
-        transformStamped.transform.rotation.z = q.z();
-        transformStamped.transform.rotation.w = q.w();
+        transformStamped.transform.rotation.x = quat_tf.x();
+        transformStamped.transform.rotation.y = quat_tf.y();
+        transformStamped.transform.rotation.z = quat_tf.z();
+        transformStamped.transform.rotation.w = quat_tf.w();
 
         br.sendTransform(transformStamped);
+
+        ROS_INFO("%f\t%f\t%f\t%f\t%f\t%f\t%f",currentSx,currentSy,currentSz, ax, ay, az, yaw);
         
-        spinOnce();
+        //ROS_INFO("%f",dt);
+
+        //next, we'll publish the odometry message over ROS
+        nav_msgs::Odometry odom;
+        geometry_msgs::Quaternion quat_odom;
+
+        tf2::convert(quat_odom , quat_tf);
+
+        odom.header.stamp = current_time;
+        odom.header.frame_id = "odom";
+
+        //set the position
+        odom.pose.pose.position.x = posX;
+        odom.pose.pose.position.y = posY;
+        odom.pose.pose.position.z = currentSz;
+        odom.pose.pose.orientation = quat_odom;
+
+        //set the velocity
+        odom.child_frame_id = "base_link";
+        odom.twist.twist.linear.x = 0;
+        odom.twist.twist.linear.y = 0;
+        odom.twist.twist.angular.z = 0;
+
+        //publish the message
+        odom_pub.publish(odom);
+        
         loop_rate.sleep();
     }
 
