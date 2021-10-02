@@ -102,13 +102,19 @@ void getPosition(double futureAx, double futureAy, double futureAz, double r, do
     currentSz   = futureSz;
     
     //Matrix Rotation
-    posX        =   (currentSx * (cos(currentPitch) * cos(currentYaw))) + (currentSy * (cos(currentPitch) * -sin(currentYaw))) + (currentSz*sin(currentPitch));
-    posY        =   (currentSx * (-sin(currentRoll)*-sin(currentPitch)*cos(currentYaw)+(cos(currentRoll)*sin(currentYaw)))) +
-                    (currentSy * (-sin(currentRoll)*-sin(currentPitch)*-sin(currentYaw) +(cos(currentRoll*cos(currentYaw))))) +
-                    (currentSz * (-sin(currentRoll)*cos(currentPitch)));
-    posZ        =   (currentSx * (cos(currentRoll)*-sin(currentPitch)*cos(currentYaw)+(sin(currentRoll)*sin(currentYaw)))) +
-                    (currentSy * (cos(currentRoll)*-sin(currentPitch)*-sin(currentYaw)+(sin(currentRoll)*cos(currentYaw)))) +
-                    (currentSz * (cos(currentRoll)*cos(currentPitch)));
+    // posX        =   (currentSx * (cos(currentPitch) * cos(currentYaw))) + (currentSy * (cos(currentPitch) * -sin(currentYaw))) + (currentSz*sin(currentPitch));
+    // posY        =   (currentSx * (-sin(currentRoll)*-sin(currentPitch)*cos(currentYaw)+(cos(currentRoll)*sin(currentYaw)))) +
+    //                 (currentSy * (-sin(currentRoll)*-sin(currentPitch)*-sin(currentYaw) +(cos(currentRoll*cos(currentYaw))))) +
+    //                 (currentSz * (-sin(currentRoll)*cos(currentPitch)));
+    // posZ        =   (currentSx * (cos(currentRoll)*-sin(currentPitch)*cos(currentYaw)+(sin(currentRoll)*sin(currentYaw)))) +
+    //                 (currentSy * (cos(currentRoll)*-sin(currentPitch)*-sin(currentYaw)+(sin(currentRoll)*cos(currentYaw)))) +
+    //                 (currentSz * (cos(currentRoll)*cos(currentPitch)));
+
+    posX    = currentSx*cos(currentPitch)*cos(currentYaw) - currentSz*sin(currentPitch) + currentSy*cos(currentPitch)*sin(currentYaw);
+    posY    = currentSy*(cos(currentRoll)*cos(currentYaw) + sin(currentPitch)*sin(currentRoll)*sin(currentYaw)) - currentSx*(cos(currentRoll)*sin(currentYaw) - cos(currentYaw)*sin(currentPitch)*sin(currentRoll)) 
+            + currentSz*cos(currentPitch)*sin(currentRoll);
+    posZ    = currentSx*(sin(currentRoll)*sin(currentYaw) + cos(currentRoll)*cos(currentYaw)*sin(currentPitch)) - currentSy*(cos(currentYaw)*sin(currentRoll) - cos(currentRoll)*sin(currentPitch)*sin(currentYaw)) 
+            + currentSz*cos(currentRoll)*cos(currentRoll);
 
     futureRoll = r;
     futurePitch = p;
