@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   nav_msgs
-  vectornav
 )
 
 ## System dependencies are found with CMake's conventions
@@ -109,7 +108,6 @@ catkin_package(
 #  LIBRARIES OrnibiBot
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
-  CATKIN_DEPENDS trueBody dThetaVel
 )
 
 ###########
@@ -131,8 +129,6 @@ include_directories(
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies( ${catkin_EXPORTED_TARGETS})
-
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

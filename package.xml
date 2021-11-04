@@ -56,10 +56,6 @@
   <build_depend>tf2_ros</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
-  <build_depend>vectornav</build_depend>
-  <build_depend>dThetaVel</build_depend>
-  <build_depend>trueBody</build_depend>>
-
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
@@ -67,7 +63,6 @@
   <build_export_depend>tf2_ros</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
-
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
@@ -75,10 +70,6 @@
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>vectornav</exec_depend>
-  <exec_depend>dThetaVel</exec_depend>
-  <exec_depend>trueBody</exec_depend>
-
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
