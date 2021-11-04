@@ -9,6 +9,8 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/console.h>
+#include <vectornav/trueBody.h>
+#include <vectornav/dThetaVel.h>
 
 
 #define ts 0.005
