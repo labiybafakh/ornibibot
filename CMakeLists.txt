@@ -137,7 +137,7 @@ add_dependencies( ${catkin_EXPORTED_TARGETS})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(prediction src/prediction.cpp)
+#add_executable(prediction src/prediction.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,7 +152,7 @@ add_executable(prediction src/prediction.cpp)
 
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(prediction ${catkin_LIBRARIES})
+#target_link_libraries(prediction ${catkin_LIBRARIES})
 
 
 #############
@@ -166,6 +166,7 @@ target_link_libraries(prediction ${catkin_LIBRARIES})
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
        src/main.py
+       src/prediction.py
        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

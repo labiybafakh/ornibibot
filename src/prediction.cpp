@@ -33,6 +33,7 @@ double posX,posY,posZ;
 
 
 
+
 void getPosition(double ax, double ay, double az, double r, double p, double y);
 
 void accCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
