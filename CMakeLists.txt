@@ -137,7 +137,7 @@ add_dependencies( ${catkin_EXPORTED_TARGETS})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-#add_executable(prediction src/prediction.cpp)
+add_executable(PositionEstimation src/PositionEstimation.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,7 +152,7 @@ add_dependencies( ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(prediction ${catkin_LIBRARIES})
+target_link_libraries(PositionEstimation ${catkin_LIBRARIES})
 
 
 #############

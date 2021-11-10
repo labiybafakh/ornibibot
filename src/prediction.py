@@ -2,7 +2,7 @@
 
 import sys
 
-from numpy.lib.financial import rate
+import numpy as np
 import rospy
 # from std_msgs.msg import *
 # from geometry_msgs.msg import *
@@ -22,12 +22,13 @@ class PositionEstimation:
 
     def __init__(self):
 
-        self.acc    = [0.0, 0.0, 0.0]
-        self.rpy    = [0.0, 0.0, 0.0]
-        self.angular= [0.0, 0.0, 0.0]
-        self.dVel   = [0.0, 0.0, 0.0]
-        self.dt     = 0.0
-        self.posXYZ = [0.0, 0.0, 0.0]
+        self.acc        = [0.0, 0.0, 0.0]
+        self.rpy        = [0.0, 0.0, 0.0]
+        self.angular    = [0.0, 0.0, 0.0]
+        self.dVel       = [0.0, 0.0, 0.0]
+        self.dt         = 0.0
+        self.posXYZ     = [0.0, 0.0, 0.0]
+        self.velocity   = [0.0, 0.0, 0.0]
 
 
         self.sub_trueBody       = rospy.Subscriber('vectornav/trueBody', trueBody, self.callbackTrueBody )
@@ -67,6 +68,8 @@ class PositionEstimation:
 
     def callbackdThetaVel(self, dThetaVelData):
         
+        rospy.loginfo(dThetaVelData)
+
         self.dt      = dThetaVelData.deltaTime
 
         self.dVel[0]    = dThetaVelData.deltaVelocity.x
@@ -75,6 +78,18 @@ class PositionEstimation:
 
         # print("Velocity:{}", self.dVel)
 
+    def velCalculation(self, deltaVelocity, time):
+
+        vel         = lastVel +  deltaVelocity
+        pos         = lastPos + (time*lastVel) + (time*0.5*deltaVelocity)
+
+        lastPos     = pos
+        lastVel     = vel
+ 
+
+        return pos
+        
+
     def tf_imu(self):
 
 
@@ -82,17 +97,19 @@ class PositionEstimation:
         
         self.deltaTime      = (self.current_time - self.last_time).to_sec()
 
-        self.posXYZ[0]      += self.dVel[0]*self.dt
-        self.posXYZ[1]      += self.dVel[1]*self.dt
-        self.posXYZ[2]      += self.dVel[2]*self.dt
+        #self.velCalculation(self.dVel, self.deltaTime)
+
+        self.posXYZ[0]  += self.dVel[0] * self.deltaTime
+        self.posXYZ[1]  += self.dVel[1] * self.deltaTime
+        self.posXYZ[2]  += self.dVel[2] * self.deltaTime
 
         self.t.header.stamp      = self.current_time
         self.t.header.frame_id   = "map"
         self.t.child_frame_id    = "base_link"
 
-        self.t.transform.translation.x   = self.acc[0]
-        self.t.transform.translation.y   = self.acc[1]
-        self.t.transform.translation.z   = self.acc[2]
+        self.t.transform.translation.x   = self.posXYZ[0]
+        self.t.transform.translation.y   = self.posXYZ[1]
+        self.t.transform.translation.z   = self.posXYZ[2]
 
         odom_quat   = tf_conversions.transformations.quaternion_from_euler(
                     0,0,self.rpy[2])
@@ -116,10 +133,9 @@ class PositionEstimation:
 
         self.odom_pub.publish(odom)
 
+
         self.last_time   = self.current_time
 
-
-    
 if __name__ == '__main__':
 
     posEst = PositionEstimation()

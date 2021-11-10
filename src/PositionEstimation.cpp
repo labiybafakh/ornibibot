@@ -12,16 +12,28 @@
 #include <vectornav/trueBody.h>
 #include <vectornav/dThetaVel.h>
 
+
 class PositionEstimation
 {
 private:
-    ros::Publisher  
+    float header;
+    float acc[4], dVel[4], angular[4], posXYZ[4];
 public:
-    posEst(ros::NodeHandle *nh)
-    {
+    void velPosCalculation(float dt);
+
+    void callbackTrueBody(vectornav::trueBody::ConstPtr& data){
+        
+        acc[0]     = data->bodyAcc.x;
+        acc[1]     = data->bodyAcc.y;
+        acc[2]     = data->bodyAcc.z;
+
+    }
+    void callbackDThetaVel(vectornav::dThetaVel::ConstPtr& data){
 
     }
 };
+
+
 
 
 
@@ -29,7 +41,5 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "OrnibibotPC");
     ros::NodeHandle nh;
-
-    PositionEstimation positionEstimation(&nh);
     
 }
