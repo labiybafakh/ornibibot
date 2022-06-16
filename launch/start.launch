@@ -23,4 +23,6 @@
 
  	<node type="rviz" name="rviz" pkg="rviz" args="-d $(find ornibibot)/rviz/rviz_config.rviz" />
 
+	<node pkg="rosserial_python" type="serial_node.py" name="rosserial_python" args="tcp" output="screen"/>
+
 </launch>
