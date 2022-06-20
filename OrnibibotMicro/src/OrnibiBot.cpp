@@ -1,20 +1,19 @@
 #include "OrnibibBot.h"
 
-OrnibiBot::OrnibiBot(ros::NodeHandle * nodehandle):nh_(*nodehandle){
+// IPAddress server(192,168,30,243);
+
+OrnibiBot::OrnibiBot(ros::NodeHandle * nodehandle):nh_(*nodehandle), chatterPub("chatter", &str_msg), cntPub("cntr", &cnt_msg){
+    // this ->nh_.getHardware(server, serverPort);
+    this -> nh_.initNode();
     initPublisher();
     initSubscriber();
 }
 
 void OrnibiBot::initPublisher(){
-    // nh_.advertise(* chatter("chatter", &str_msg));
-    std_msgs::Int16 str_msg;
-    std_msgs::Int16 cnt_msg;
 
-    chatterPub = chatter("chatter", &str_msg);
-    cntPub = cnt("cntr", &cnt_msg);
+    nh_.advertise(chatterPub);
+    nh_.advertise(cntPub);
 
-    nh_.advertise();
-    nh_.advertise(("cntr", &cnt_msg);
 }
 
 void OrnibiBot::initSubscriber(){
@@ -23,67 +22,4 @@ void OrnibiBot::initSubscriber(){
 
 void OrnibiBot::freq_cb(const geometry_msgs::Twist& flap){
     freqFlap = flap.linear.x;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void OrnibiBot::initSubscriber(){
-    nh_.subscribe(* subFlap);
-}
-
-void OrnibiBot::freq_cb(const geometry_msgs::Twist& msg){
-    freqFlap = msg.linear.x;
 }

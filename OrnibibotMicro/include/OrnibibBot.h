@@ -2,6 +2,7 @@
 #define ORNIBIBOT_H
 
 #include <Arduino.h>
+#include <WiFi.h>
 #include <iostream>
 #include <ros.h>
 #include <std_msgs/Int16.h>
@@ -9,6 +10,7 @@
 #include <geometry_msgs/Twist.h>
 #include <math.h>
 #include <string.h>
+#include <OrnibibBot.h>
 
 class OrnibiBot{
     public:
@@ -16,13 +18,15 @@ class OrnibiBot{
         void freq_cb(const geometry_msgs::Twist& msg);
         volatile double freqFlap;
 
-    private:
+    protected:
         ros::NodeHandle nh_;
-        
-        void initPublisher();
+        std_msgs::Int16 str_msg;
+        std_msgs::Int16 cnt_msg;
+        const uint16_t serverPort = 11411;
         void initSubscriber();
-        ros::Publisher * chatterPub;
-        ros::Publisher * cntPub;
+        void initPublisher();
+        ros::Publisher chatterPub;
+        ros::Publisher cntPub;
         // ros::Subscriber<geometry_msgs::Twist> flap("flapFreq", freq_cb);
         ros::Subscriber<geometry_msgs::Twist, OrnibiBot> * subFlap;
         // ros::Publisher * chatter;
