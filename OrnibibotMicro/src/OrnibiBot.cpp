@@ -1,25 +1,20 @@
 #include "OrnibibBot.h"
 
-// IPAddress server(192,168,30,243);
 
-OrnibiBot::OrnibiBot(ros::NodeHandle * nodehandle):nh_(*nodehandle), chatterPub("chatter", &str_msg), cntPub("cntr", &cnt_msg){
-    // this ->nh_.getHardware(server, serverPort);
-    this -> nh_.initNode();
-    initPublisher();
-    initSubscriber();
+volatile uint16_t OrnibiBot::getFlapMs(volatile double freq){
+  return (volatile uint16_t)(1000/freq);
 }
 
-void OrnibiBot::initPublisher(){
+volatile int16_t OrnibiBot::sineFlap(){
+    _periode = OrnibiBot::getFlapMs(_flapFreq);
 
-    nh_.advertise(chatterPub);
-    nh_.advertise(cntPub);
-
+    return (volatile int16_t) (_amplitude * sin(((2*M_PI)/_periode * _time)));
 }
 
-void OrnibiBot::initSubscriber(){
-    nh_.subscribe(* subFlap);
+volatile int16_t OrnibiBot::squareFlap(){
+    return _time;
 }
 
-void OrnibiBot::freq_cb(const geometry_msgs::Twist& flap){
-    freqFlap = flap.linear.x;
-}
+volatile int16_t OrnibiBot::sawFlap(){
+    return _time;
+} 

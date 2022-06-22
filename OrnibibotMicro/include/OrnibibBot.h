@@ -13,24 +13,19 @@
 #include <OrnibibBot.h>
 
 class OrnibiBot{
-    public:
-        OrnibiBot(ros::NodeHandle* nodehandle);
-        void freq_cb(const geometry_msgs::Twist& msg);
-        volatile double freqFlap;
+    private:
+        volatile uint16_t getFlapMs(volatile double freq);
 
-    protected:
-        ros::NodeHandle nh_;
-        std_msgs::Int16 str_msg;
-        std_msgs::Int16 cnt_msg;
-        const uint16_t serverPort = 11411;
-        void initSubscriber();
-        void initPublisher();
-        ros::Publisher chatterPub;
-        ros::Publisher cntPub;
-        // ros::Subscriber<geometry_msgs::Twist> flap("flapFreq", freq_cb);
-        ros::Subscriber<geometry_msgs::Twist, OrnibiBot> * subFlap;
-        // ros::Publisher * chatter;
-        // ros::Publisher * cnt;
+    public:
+        volatile uint16_t _time;
+        volatile uint16_t _amplitude;
+        volatile double _flapFreq;
+        volatile uint16_t _periode;
+        volatile uint16_t flapping;
+
+        volatile int16_t sineFlap();
+        volatile int16_t squareFlap();
+        volatile int16_t sawFlap();
 
 };
 

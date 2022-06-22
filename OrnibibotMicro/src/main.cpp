@@ -3,6 +3,8 @@
 #include <ESP32Servo.h>
 #include <Thread.h>
 #include <ThreadController.h>
+#include "SBUS.h"
+#include "OrnibibBot.h"
 
 #include <iostream>
 #include <ros.h>
@@ -42,6 +44,8 @@
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+SBUS sbus;
+OrnibiBot robot;
 
 Servo leftWing;
 Servo rightWing;
@@ -75,69 +79,9 @@ volatile uint16_t counter=0;
 bool failSafe;
 bool lostFrame;
 
-int _targetServo[5];
+int _Servo[5];
+int* _targetServo = _Servo ;
 
-
-class SBUS{
-  public:
-    SBUS(HardwareSerial& bus);
-    void begin(uint8_t RX_PIN, uint8_t TX_Pin, bool INVERTED, uint32_t SBUSBAUD);
-    char* getEncodedData(int data[]);
-    int sendSBUS(int data[]);
-    
-  protected:
-    uint32_t _sbusBaud = 100000;
-    HardwareSerial* _bus;
-};
-
-SBUS::SBUS(HardwareSerial& bus){
-    _bus = &bus;
-}
-
-void SBUS::begin(uint8_t RXPIN, uint8_t TXPIN, bool INVERTED, uint32_t baudrate){
-
-    _sbusBaud = baudrate;
-    _bus->begin(_sbusBaud, SERIAL_8E2, RXPIN, TXPIN, INVERTED);
-}
-
-char* SBUS::getEncodedData(int targetAngle[]){
-    
-    short sbus_servo_id[16];
-    char sbus_data[25] = {
-      0x0f, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00
-    };
-
-    //Convert Degree to Pulse
-    sbus_servo_id[0] = (int)(10.667 * (double)(targetAngle[0] + 90) + 64);
-    sbus_servo_id[1] = (int)(10.667 * (double)(targetAngle[1] + 90) + 64);
-    sbus_servo_id[2] = (int)(10.667 * (double)(targetAngle[2] + 90) + 64);
-    sbus_servo_id[3] = (int)(10.667 * (double)(targetAngle[3] + 90) + 64);
-    sbus_servo_id[4] = (int)(10.667 * (double)(targetAngle[4] + 90) + 64);
-    sbus_servo_id[5] = (int)(10.667 * (double)(targetAngle[5] + 90) + 64);
-
-    //Encode Servo Pulse Data to SBUS Protocol
-    sbus_data[0] = 0x0f;
-    sbus_data[1] = (sbus_servo_id[0] & 0xff);
-    sbus_data[2] = ((sbus_servo_id[0] >> 8) & 0x07) | ((sbus_servo_id[1]  << 3));
-    sbus_data[3] = ((sbus_servo_id[1] >> 5) & 0x3f) | (sbus_servo_id[2]  << 6);
-    sbus_data[4] = ((sbus_servo_id[2] >> 2) & 0xff);
-    sbus_data[5] = ((sbus_servo_id[2] >> 10) & 0x01) | (sbus_servo_id[3]  << 1);
-    sbus_data[6] = ((sbus_servo_id[3] >> 7) & 0x0f) | (sbus_servo_id[4]  << 4);
-    sbus_data[7] = ((sbus_servo_id[4] >> 4) & 0x7f) | (sbus_servo_id[5]  << 7);
-    sbus_data[8] = ((sbus_servo_id[5] >> 1) & 0xff);
-    sbus_data[9] = ((sbus_servo_id[5] >> 9) & 0x03);
-
-    return sbus_data;
-}
-
-int SBUS::sendSBUS(int data[]){
-    //Send Encoded SBUS Data through Serial Port
-    return _bus->write(SBUS::getEncodedData(data), 25);
-}
 
 void sendData(){
     short  sbus_servo_id[16]; 
@@ -182,48 +126,37 @@ ros::Publisher cnt("cntr", &cnt_msg);
 ros::Subscriber<geometry_msgs::Twist> flap("flapFreq", freq_cb);
 
 
-volatile double getFlapMs(double freq){
-  return (volatile double)(1000/freq);
-}
-
-volatile int16_t interpolateFlap(int amplitude, volatile double freq, int time){
-    
-    return (volatile int16_t) (amplitude * sin(((2*M_PI)/getFlapMs(freqFlap) * time)));
-
-}
-
 void paramUpdate( void * pvParameters ){
   Serial.print("Task1 running on core ");
   Serial.println(xPortGetCoreID());
 
   for(;;){
- if (nh.connected()) {
+    if (nh.connected()) {
     digitalWrite(2, HIGH);
   
     if(flapMode==true){
-      
+      robot._amplitude = 35;
+      robot._flapFreq = 5;
+      robot._time = counter;
+      robot.flapping = robot.sineFlap();
+
       // str_msg.data = getFlapMs(freqFlap);
-      volatile int16_t flapping = interpolateFlap(35, getFlapMs(freqFlap), counter);
+      // volatile int16_t flapping = interpolateFlap(35, getFlapMs(freqFlap), counter);
     
-      
-      if(counter<getFlapMs(freqFlap))counter++;
+      if(counter<robot._periode)counter++;
       else counter=0;  
       
-      _targetServo[0] = midLeft+flapping;
-      _targetServo[1] = midRight-flapping;
+      _targetServo[0] = midLeft+(int)robot.flapping;
+      _targetServo[1] = midRight-(int)robot.flapping;
       _targetServo[2] = 0;
       _targetServo[3] = 0;
 
-        str_msg.data = _targetServo[0];
-      chatter.publish( &str_msg );
-      // if(counter%10==0) sendData(data);
 
-      // if(millis()%10==0){
+      /*Problem Here
+      it causes delay during interpolation*/
+      // str_msg.data = robot._periode;
+      // chatter.publish( &str_msg );
 
-        // Serial2.write(sbus.getEncodedData(data), 25);
-        // leftWing.writeMicroseconds(midLeft + flapping);
-        // rightWing.writeMicroseconds(midRight - flapping); 
-      
     }
   }
   
@@ -249,6 +182,7 @@ void motorUpdate( void * pvParameters ){
 
   for(;;){
       sendData();
+      // sbus.sendPosition(sbus.setPosition(_targetServo));
       delay(10);
   }
 }
@@ -262,8 +196,9 @@ void setup()
   rollTail.attach(rollPin, 800, 2200);
   pitchTail.attach(PitchPin, 800, 2200);
 
-  Serial2.begin(SBUS_SPEED, SERIAL_8E2, 16, 17, true); 
-  
+  sbus.init();
+
+  // Serial2.begin(SBUS_SPEED, SERIAL_8E2, 16, 17, true); 
 
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -283,10 +218,6 @@ void setup()
   nh.advertise(chatter);
   nh.subscribe(flap);
   flapMode=true;
-
-  // servoThread->onRun(sendData);
-  // servoThread->setInterval(10);
-  // threadController.add(servoThread);
   
   xTaskCreatePinnedToCore(
                     paramUpdate,   /* Task function. */
