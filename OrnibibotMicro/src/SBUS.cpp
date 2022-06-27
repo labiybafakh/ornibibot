@@ -11,16 +11,18 @@ void SBUS::init(){
     Serial2.begin(sbus_speed, SERIAL_8E2, 16, 17, true); 
 }
 
-volatile double SBUS::degToSignal(double pos){
-    return (volatile double)(10.667 * (pos+ 90.0) + 64.0);
+int SBUS::degToSignal(double pos){
+    return (int)(10.667 * (pos+ 90.0) + 64.0);
 }
 
-char * SBUS::setPosition(int pos[]){
+void SBUS::setPosition(int pos[]){
 
-    sbus_servo_id[0] = (int)(10.667 * (double)(SBUS::degToSignal(pos[0]) + 90) + 64);
-    sbus_servo_id[1] = (int)(10.667 * (double)(SBUS::degToSignal(pos[1]) + 90) + 64);
-    sbus_servo_id[2] = (int)(10.667 * (double)(SBUS::degToSignal(pos[2]) + 90) + 64);
-    sbus_servo_id[3] = (int)(10.667 * (double)(SBUS::degToSignal(pos[3]) + 90) + 64);
+    sbus_servo_id[0] = SBUS::degToSignal(pos[0]);
+    sbus_servo_id[1] = SBUS::degToSignal(pos[1]);
+    sbus_servo_id[2] = SBUS::degToSignal(pos[2]);
+    sbus_servo_id[3] = SBUS::degToSignal(pos[3]);
+    sbus_servo_id[4] = 0;
+    sbus_servo_id[5] = 0;
     
     sbus_data[0] = 0x0f;
     sbus_data[1] =  sbus_servo_id[0] & 0xff;
@@ -33,9 +35,8 @@ char * SBUS::setPosition(int pos[]){
     sbus_data[8] = ((sbus_servo_id[5] >> 1) & 0xff ) ;
     sbus_data[9] = ((sbus_servo_id[5] >> 9) & 0x03 ) ;
 
-    return sbus_data;
 }
 
-bool SBUS::sendPosition(char *encodedPos){
-    return Serial2.write(encodedPos, 25);
+bool SBUS::sendPosition(){
+    return Serial2.write(sbus_data, 25);
 }

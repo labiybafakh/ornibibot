@@ -26,13 +26,13 @@
 #define upStrokeL 1900
 #define downStrokeL 1400
 // #define midLeft 1600
-#define midLeft 45
+#define midLeft 60
 
 //Right Wing Configuration
 #define upStrokeR 1100
 #define downStrokeR 1600
 // #define midRight 1400
-#define midRight 45
+#define midRight 60
 
 //SBUS
 #define SBUS_SPEED  100000
@@ -118,13 +118,22 @@ void sendData(){
 }
 
 void freq_cb(const geometry_msgs::Twist& flap){
-    freqFlap = flap.linear.x;
+    robot._flapFreq = flap.linear.x;
 }
 
 ros::Publisher chatter("chatter", &str_msg);
 ros::Publisher cnt("cntr", &cnt_msg);
 ros::Subscriber<geometry_msgs::Twist> flap("flapFreq", freq_cb);
 
+volatile double getFlapMs(double freq){
+  return (volatile double)(1000/freq);
+}
+
+volatile int16_t interpolateFlap(int amplitude, volatile double freq, int time){
+    
+    return (volatile int16_t) (amplitude * sin(((2*M_PI)/getFlapMs(robot._flapFreq) * time)));
+
+}
 
 void paramUpdate( void * pvParameters ){
   Serial.print("Task1 running on core ");
@@ -134,29 +143,26 @@ void paramUpdate( void * pvParameters ){
     if (nh.connected()) {
     digitalWrite(2, HIGH);
   
-    if(flapMode==true){
-      robot._amplitude = 35;
-      robot._flapFreq = 5;
-      robot._time = counter;
-      robot.flapping = robot.sineFlap();
+    if(flapMode==true && robot._flapFreq>0.01f){
 
-      // str_msg.data = getFlapMs(freqFlap);
-      // volatile int16_t flapping = interpolateFlap(35, getFlapMs(freqFlap), counter);
+      robot._amplitude = 35;
     
-      if(counter<robot._periode)counter++;
-      else counter=0;  
-      
-      _targetServo[0] = midLeft+(int)robot.flapping;
-      _targetServo[1] = midRight-(int)robot.flapping;
+      _targetServo[0] = midLeft+robot.sineFlap();
+      _targetServo[1] = midRight-robot.sineFlap();
       _targetServo[2] = 0;
       _targetServo[3] = 0;
+
+      if(robot._time<robot._periode)robot._time++;
+      // if(counter<robot._periode)counter++;
+      else robot._time=0;  
+      
+
 
 
       /*Problem Here
       it causes delay during interpolation*/
-      // str_msg.data = robot._periode;
+      // str_msg.data = robot.flapping;
       // chatter.publish( &str_msg );
-
     }
   }
   
@@ -169,21 +175,20 @@ void paramUpdate( void * pvParameters ){
     digitalWrite(2, LOW);
 
   }
-
+  sbus.setPosition(_targetServo);
   nh.spinOnce();
   delay(1);
   } 
 }
 
-//Task2code: blinks an LED every 700 ms
 void motorUpdate( void * pvParameters ){
   Serial.print("Task2 running on core ");
   Serial.println(xPortGetCoreID());
 
   for(;;){
-      sendData();
-      // sbus.sendPosition(sbus.setPosition(_targetServo));
-      delay(10);
+      // sendData();
+      sbus.sendPosition();
+      delay(20);
   }
 }
 

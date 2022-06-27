@@ -14,9 +14,9 @@ class SBUS{
         };
     public:
         void init();
-        volatile double degToSignal(double pos);
-        char * setPosition(int pos[]);
-        bool sendPosition(char* encodedPos);
+        int degToSignal(double pos);
+        void setPosition(int pos[]);
+        bool sendPosition();
 };
 
 #endif

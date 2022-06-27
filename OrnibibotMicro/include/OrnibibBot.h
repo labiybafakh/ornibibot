@@ -13,15 +13,16 @@
 #include <OrnibibBot.h>
 
 class OrnibiBot{
+        
     private:
-        volatile uint16_t getFlapMs(volatile double freq);
+        volatile uint16_t getFlapMs();
 
     public:
         volatile uint16_t _time;
         volatile uint16_t _amplitude;
         volatile double _flapFreq;
         volatile uint16_t _periode;
-        volatile uint16_t flapping;
+        volatile uint16_t _flapping;
 
         volatile int16_t sineFlap();
         volatile int16_t squareFlap();
