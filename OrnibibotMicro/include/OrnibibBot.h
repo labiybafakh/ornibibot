@@ -12,10 +12,15 @@
 #include <string.h>
 #include <OrnibibBot.h>
 
+
 class OrnibiBot{
         
     private:
         volatile uint16_t getFlapMs();
+        struct tailPosition{
+            unsigned int roll;
+            unsigned int pitch;
+        };
 
     public:
         volatile uint16_t _time;
@@ -27,6 +32,8 @@ class OrnibiBot{
         volatile int16_t sineFlap();
         volatile int16_t squareFlap();
         volatile int16_t sawFlap();
+
+        tailPosition tail_position;
 
 };
 

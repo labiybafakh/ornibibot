@@ -11,10 +11,10 @@ void SBUS::init(){
     Serial2.begin(sbus_speed, SERIAL_8E2, 16, 17, true); 
 }
 
-int SBUS::degToSignal(double pos){
-    return (int)(10.667 * (pos+ 90.0) + 64.0);
+int SBUS::degToSignal(int pos){
+    //Min pulse 920, Max pulse 2120, Mid Pulse 1520
+    return (int)(1220 + pos*3);
 }
-
 void SBUS::setPosition(int pos[]){
 
     sbus_servo_id[0] = SBUS::degToSignal(pos[0]);

@@ -1,6 +1,7 @@
 #include "OrnibibBot.h"
 
 
+
 volatile uint16_t OrnibiBot::getFlapMs(){
   _periode =  (1000/_flapFreq);
   return _periode;

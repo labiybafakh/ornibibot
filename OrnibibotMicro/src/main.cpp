@@ -34,6 +34,9 @@
 // #define midRight 1400
 #define midRight 60
 
+#define midPitch 90
+#define midRoll 90
+
 //SBUS
 #define SBUS_SPEED  100000
 #define Peri1       10
@@ -83,57 +86,23 @@ int _Servo[5];
 int* _targetServo = _Servo ;
 
 
-void sendData(){
-    short  sbus_servo_id[16]; 
-    char sbus_data[25] = {
-      0x0f, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00
-    };
-
-    // for (int i = 0; i <= 15; i++) {
-    //   sbus_servo_id[i] = (int)(  10.667 * (double)(target_angle[i] + 90.0) + 64);
-    // }
-    sbus_servo_id[0] = (int)(10.667 * (double)(_targetServo[0] + 90) + 64);
-    sbus_servo_id[1] = (int)(10.667 * (double)(_targetServo[1] + 90) + 64);
-    sbus_servo_id[2] = (int)(10.667 * (double)(_targetServo[2] + 90) + 64);
-    sbus_servo_id[3] = (int)(10.667 * (double)(_targetServo[3] + 90) + 64);
-    
-    /* sbus送信用に変換した目標角度をS.BUS送信用バッファに詰め込む  */
-    sbus_data[0] = 0x0f;
-    sbus_data[1] =  sbus_servo_id[0] & 0xff;
-    sbus_data[2] = ((sbus_servo_id[0] >> 8) & 0x07 ) | ((sbus_servo_id[1] << 3 ) );
-    sbus_data[3] = ((sbus_servo_id[1] >> 5) & 0x3f ) | (sbus_servo_id[2]  << 6);
-    sbus_data[4] = ((sbus_servo_id[2] >> 2) & 0xff ) ;
-    sbus_data[5] = ((sbus_servo_id[2] >> 10) & 0x01 ) | (sbus_servo_id[3] << 1 )   ;
-    sbus_data[6] = ((sbus_servo_id[3] >> 7) & 0x0f ) | (sbus_servo_id[4]  << 4 )   ;
-    sbus_data[7] = ((sbus_servo_id[4] >> 4) & 0x7f ) | (sbus_servo_id[5]  << 7 )   ;
-    sbus_data[8] = ((sbus_servo_id[5] >> 1) & 0xff ) ;
-    sbus_data[9] = ((sbus_servo_id[5] >> 9) & 0x03 ) ;
-
-    /* sbus_dataを25bit分送信 */  
-    Serial2.write(sbus_data, 25); 
-}
-
 void freq_cb(const geometry_msgs::Twist& flap){
     robot._flapFreq = flap.linear.x;
+}
+
+void tail_cb(const geometry_msgs::Twist& tail){
+    robot.tail_position.pitch = (int) (tail.linear.x*4.5f);
+    robot.tail_position.roll = (int) (tail.angular.z*4.5f);
+    // robot.tail_pos = tail.linear.x;
+    // robot.
 }
 
 ros::Publisher chatter("chatter", &str_msg);
 ros::Publisher cnt("cntr", &cnt_msg);
 ros::Subscriber<geometry_msgs::Twist> flap("flapFreq", freq_cb);
+ros::Subscriber<geometry_msgs::Twist> tail("tail", tail_cb);
 
-volatile double getFlapMs(double freq){
-  return (volatile double)(1000/freq);
-}
 
-volatile int16_t interpolateFlap(int amplitude, volatile double freq, int time){
-    
-    return (volatile int16_t) (amplitude * sin(((2*M_PI)/getFlapMs(robot._flapFreq) * time)));
-
-}
 
 void paramUpdate( void * pvParameters ){
   Serial.print("Task1 running on core ");
@@ -147,21 +116,19 @@ void paramUpdate( void * pvParameters ){
 
       robot._amplitude = 35;
     
-      _targetServo[0] = midLeft+robot.sineFlap();
-      _targetServo[1] = midRight-robot.sineFlap();
-      _targetServo[2] = 0;
-      _targetServo[3] = 0;
+      _targetServo[0] = midLeft+robot.squareFlap();
+      _targetServo[1] = midRight-robot.squareFlap();
+      _targetServo[2] = robot.tail_position.pitch;
+      _targetServo[3] = robot.tail_position.roll;
 
       if(robot._time<robot._periode)robot._time++;
       // if(counter<robot._periode)counter++;
       else robot._time=0;  
       
 
-
-
       /*Problem Here
       it causes delay during interpolation*/
-      // str_msg.data = robot.flapping;
+      // str_msg.data = _targetServo[2];
       // chatter.publish( &str_msg );
     }
   }
@@ -170,8 +137,8 @@ void paramUpdate( void * pvParameters ){
     Serial.println("Not Connected");
       _targetServo[0] = midLeft;
       _targetServo[1] = midRight;
-      _targetServo[2] = 0;
-      _targetServo[3] = 0;
+      _targetServo[2] = midPitch;
+      _targetServo[3] = midRoll;
     digitalWrite(2, LOW);
 
   }
@@ -189,6 +156,7 @@ void motorUpdate( void * pvParameters ){
       // sendData();
       sbus.sendPosition();
       delay(20);
+      
   }
 }
 
@@ -222,6 +190,7 @@ void setup()
   // Start to be polite
   nh.advertise(chatter);
   nh.subscribe(flap);
+  nh.subscribe(tail);
   flapMode=true;
   
   xTaskCreatePinnedToCore(

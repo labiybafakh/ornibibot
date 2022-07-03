@@ -14,7 +14,7 @@ class SBUS{
         };
     public:
         void init();
-        int degToSignal(double pos);
+        int degToSignal(int pos);
         void setPosition(int pos[]);
         bool sendPosition();
 };
