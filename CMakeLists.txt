@@ -172,6 +172,7 @@ target_link_libraries(test_code ${catkin_LIBRARIES})
 catkin_install_python(PROGRAMS
        src/main.py
        src/prediction.py
+       src/plotsensor.py
        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
