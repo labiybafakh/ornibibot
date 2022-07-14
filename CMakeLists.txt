@@ -173,6 +173,7 @@ catkin_install_python(PROGRAMS
        src/main.py
        src/prediction.py
        src/plotsensor.py
+       gui/gui.py
        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

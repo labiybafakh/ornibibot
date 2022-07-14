@@ -1,5 +1,7 @@
 import sys
 from typing_extensions import Self
+from PyQt5 import QtCore, QtWidgets
+
 
 import numpy as np
 import matplotlib.pyplot as graph
