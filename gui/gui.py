@@ -1,5 +1,6 @@
 from random import Random, random
 import rospy
+from geometry_msgs.msg import WrenchStamped
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget
@@ -27,9 +28,19 @@ class MyWindow(QMainWindow):
         self.setDocumentMode(True)
         self.setGeometry(200, 200, 300, 300)
         self.setWindowTitle("TESTING")
+        rospy.init_node('GUI', anonymous=False)
+
         self.initUI()
 
+        #Timer
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(1)
+        self.timer.timeout.connect(self.update_data)
+        self.timer.start()
+
+        #initilize
         self.flag_connect=0
+        self.counter_force_data=0
 
     def initUI(self):
         self.centralwidget = QtWidgets.QWidget(self)
@@ -138,6 +149,15 @@ class MyWindow(QMainWindow):
         self.initial.clicked.connect(self.initial_callback)
 
     def init_plotter_section(self):
+        #Init ros subscriber
+        self.sub_force = rospy.Subscriber("leptrino_force_torque/force_torque", WrenchStamped, self.callback_force_sensor)
+        self.force_x = []
+        self.force_y = []
+        self.force_z = []
+        self.time = []
+        self.force = np.array([0,0,0], dtype=np.float32)
+
+
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 100, 421, 401))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
@@ -149,10 +169,9 @@ class MyWindow(QMainWindow):
 
         self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
         # self.canvas.axes.plot([0,1,2,3,4], [10,1,20,3,40])
-        n_data = 50
-        self.xdata = list(range(n_data))
-        self.ydata = [np.random.randint(0,10) for i in range(n_data)]
-        self.update_plotter()
+        self.xdata = []
+        self.ydata = []
+        self.update_data()
         # self.setCentralWidget(sc)
 
         self.toolbar = NavigationToolbar(self.canvas, self)
@@ -169,18 +188,26 @@ class MyWindow(QMainWindow):
         self.graph_layout.addWidget(self.plotter_moment)
 
         self.show()
+    
+    def callback_force_sensor(self, msg):
+        self.force_x.append(msg.wrench.force.x)
+        self.force_y.append(msg.wrench.force.y)
+        self.force_z.append(msg.wrench.force.z)
+        np.append(self.force, [msg.wrench.force.x,msg.wrench.force.y,msg.wrench.force.z])
+        self.time.append(rospy.Time.now().to_nsec()/1000)
+        self.counter_force_data +=1
+        # self.index = self.counter_force_data
+        # pass
 
-        self.timer = QtCore.QTimer()
-        self.timer.setInterval(100)
-        self.timer.timeout.connect(self.update_plotter)
-        self.timer.start()
 
-    def update_plotter(self):
-        self.ydata = self.ydata[1:] + [np.random.randint(0,10)]
+    def update_data(self):
+        self.xdata.append(self.time)
+        self.ydata.append(self.force_x)
         self.canvas.axes.cla()
         self.canvas.axes.plot(self.xdata, self.ydata, 'r')
 
         self.canvas.draw()
+        self.canvas.flush_events()
 
     def connect_callback(self):
         
